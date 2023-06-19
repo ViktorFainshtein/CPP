@@ -1,0 +1,53 @@
+// https://sequencediagram.org/
+
+title RCString
+
+participant Client
+participant RCString
+participant StringData
+participant Proxy
+
+space 
+==RCString object instantiation==
+Client->RCString:RCString("Hello")
+RCString->StringData:Create
+box right of StringData:- caclulate length\n- allocate raw memory\n- call (the private) ctor\n  using placement new
+RCString<--StringData:StringData pointer
+Client<--RCString:RCString object
+
+space
+==RCString object destruction==
+Client->RCString:Destroy
+RCString->StringData:Detach
+box right of StringData:- decrease n-members\n- if (n-members == 0)\n    delete this
+
+space
+==Modifying an element of RCString obj==
+Client->RCString:str[index] = c
+RCString->Proxy:Instantiate
+box right of Proxy:- initialize RCString reference,\n  and element index
+RCString<--Proxy:Proxy object
+Client<--RCString:(temporary) Proxy object
+Client->Proxy:operator=(c)
+RCString<-Proxy:Set(index,c)
+box right of RCString:if (StringData is shared)\n   - create a copy of StringData\n   - Detach\n   - update the StringData pointer\n     
+RCString->StringData:Set(index,c)
+
+space
+==Getting an element from RCString obj==
+Client->RCString:c = str[index]
+RCString->Proxy:Proxy(RCString-obj,index)
+box right of Proxy:- initialize RCString reference,\n  and element index
+RCString<--Proxy:Proxy object
+Client<--RCString:(temporary) Proxy object
+Client->Proxy:operator char()
+RCString<-Proxy:Get(index)
+RCString->StringData:Get(index)
+RCString<--StringData:element
+Client<--RCString:element
+space
+==Copy RCString object==
+Client->RCString:RCString(other)
+RCString->StringData:Join
+box right of StringData:- copy StringData pointer\n- increase n-members
+Client<--RCString:RCString object
